@@ -129,6 +129,7 @@
       display: none;
     }
   </style>
+    <script src="games.js"></script>
 </head>
 <body>
   <div id="app">
@@ -213,6 +214,8 @@
       if (document.getElementById('menu').style.display !== 'none') {
         selectedIndex = Math.max(0, selectedIndex - 1);
         updateMenuSelection();
+    } else if (currentGame) {
+      lastWheelDelta = -1; // Scroll up
       }
     });
 
@@ -220,12 +223,16 @@
       if (document.getElementById('menu').style.display !== 'none') {
         selectedIndex = Math.min(menuItems.length - 1, selectedIndex + 1);
         updateMenuSelection();
+    } else if (currentGame) {
+      lastWheelDelta = 1; // Scroll down
       }
     });
 
     // PTT Button - Select/Launch Game
     window.addEventListener('sideClick', () => {
       if (document.getElementById('menu').style.display !== 'none') {
+    } else if (currentGame) {
+      currentGame.onAction();
         launchGame(menuItems[selectedIndex].dataset.game);
       }
     });
@@ -254,25 +261,51 @@
       }, 500);
     }
 
-    function loadGameModule(gameName) {
-      const canvas = document.getElementById('game-canvas');
-      const ctx = canvas.getContext('2d');
-      
-      // Clear canvas
-      ctx.fillStyle = '#000';
-      ctx.fillRect(0, 0, canvas.width, canvas.height);
-      
-      // Draw placeholder
-      ctx.fillStyle = '#fff';
-      ctx.font = '12px Courier New';
-      ctx.textAlign = 'center';
-      ctx.fillText(`${gameName.toUpperCase()}`, canvas.width / 2, canvas.height / 2 - 20);
-      ctx.font = '10px Courier New';
-      ctx.fillText('COMING SOON', canvas.width / 2, canvas.height / 2);
-      ctx.fillText('Hold PTT 5sec to exit', canvas.width / 2, canvas.height / 2 + 20);
-    }
+let currentGame = null;
+let gameLoop = null;
+let lastWheelDelta = 0;
 
-    // Long Press to Exit Game
+function loadGameModule(gameName) {
+  const canvas = document.getElementById('game-canvas');
+  const ctx = canvas.getContext('2d');
+  
+  // Map menu game names to Games object keys
+  const gameMap = {
+    'stack_tower': 'stack_tower',
+    'pong': 'pong',
+    'shooter': 'shooter',
+    'maze': 'maze',
+    'rps': 'rps',
+    'cannon': 'cannon',
+    'dice': 'dice',
+    'log_roller': 'log_roller',
+    'tempest': 'tempest',
+    'pinball': 'pinball'
+  };
+  
+  const gameKey = gameMap[gameName];
+  if (!Games || !Games[gameKey]) {
+    ctx.fillStyle = '#000'; ctx.fillRect(0, 0, 240, 282);
+    ctx.fillStyle = '#fff'; ctx.font = '12px Courier New'; ctx.textAlign = 'center';
+    ctx.fillText('GAME NOT FOUND', 120, 141);
+    return;
+  }
+  
+  currentGame = Games[gameKey];
+  currentGame.init(canvas);
+  
+  // Start game loop
+  if (gameLoop) cancelAnimationFrame(gameLoop);
+  function animate() {
+    if (currentGame) {
+      currentGame.update(lastWheelDelta);
+      currentGame.draw(ctx);
+      lastWheelDelta = 0;
+      gameLoop = requestAnimationFrame(animate);
+    }
+  }
+  animate();
+}    // Long Press to Exit Game
     let longPressTimer = null;
     window.addEventListener('longPressStart', () => {
       longPressTimer = setTimeout(() => {
