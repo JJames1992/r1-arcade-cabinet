@@ -1,0 +1,27 @@
+# R1 Arcade Cabinet - Python Dependencies
+# Install with: pip install -r requirements.txt
+
+# Graphics and Game Engine (depends on R1 Creations SDK availability)
+# pygame>=2.5.0  # If R1 supports Pygame for rendering
+# pillow>=10.0.0  # For image handling if needed
+
+# Audio Processing
+# pygame.mixer  # Part of pygame, for 8-bit audio playback
+
+# IMU and Sensor Data
+# Note: R1 device likely has its own SDK for hardware access
+# These are placeholders pending R1 Creations SDK documentation
+
+# Data Persistence
+# Built-in Python: json, sqlite3 (no external deps needed)
+
+# Math and Physics
+# numpy>=1.24.0  # For physics calculations (optional, can use pure Python)
+
+# Development Tools
+# black>=23.0.0  # Code formatting
+# pylint>=2.17.0  # Linting
+
+# NOTE: Actual dependencies depend on Rabbit R1 Creations SDK
+# This file will be updated once SDK documentation is available
+# For now, this serves as a placeholder structure
