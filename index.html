@@ -1,0 +1,306 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=240, height=282, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <title>R1 Arcade Cabinet</title>
+  <style>
+    * {
+      margin: 0;
+      padding: 0;
+      box-sizing: border-box;
+    }
+
+    body {
+      width: 240px;
+      height: 282px;
+      overflow: hidden;
+      background: #000;
+      color: #fff;
+      font-family: 'Courier New', monospace;
+      font-size: 12px;
+      position: relative;
+    }
+
+    /* Arcade Cabinet Border */
+    #app {
+      width: 100%;
+      height: 100%;
+      border: 3px solid #fff;
+      position: relative;
+      overflow: hidden;
+    }
+
+    /* Main Menu */
+    #menu {
+      display: flex;
+      flex-direction: column;
+      padding: 10px;
+      height: 100%;
+    }
+
+    #menu h1 {
+      font-size: 16px;
+      text-align: center;
+      margin-bottom: 15px;
+      border-bottom: 2px solid #fff;
+      padding-bottom: 5px;
+    }
+
+    #menu-items {
+      flex: 1;
+      overflow-y: auto;
+    }
+
+    .menu-item {
+      padding: 8px 5px;
+      margin: 3px 0;
+      border: 1px solid #666;
+      cursor: pointer;
+      transition: all 0.1s;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+
+    .menu-item:hover,
+    .menu-item.selected {
+      background: #fff;
+      color: #000;
+      border-color: #fff;
+    }
+
+    .menu-icon {
+      width: 12px;
+      height: 12px;
+      border: 1px solid currentColor;
+      flex-shrink: 0;
+    }
+
+    .menu-label {
+      flex: 1;
+      font-size: 11px;
+    }
+
+    /* Game Container */
+    #game-container {
+      width: 100%;
+      height: 100%;
+      position: relative;
+      display: none;
+    }
+
+    #game-canvas {
+      width: 100%;
+      height: 100%;
+      image-rendering: pixelated;
+      image-rendering: crisp-edges;
+    }
+
+    /* Loading Screen */
+    #loading {
+      position: absolute;
+      top: 50%;
+      left: 50%;
+      transform: translate(-50%, -50%);
+      text-align: center;
+      font-size: 14px;
+    }
+
+    .blink {
+      animation: blink 1s infinite;
+    }
+
+    @keyframes blink {
+      0%, 50% { opacity: 1; }
+      51%, 100% { opacity: 0; }
+    }
+
+    /* Status Bar */
+    #status {
+      position: absolute;
+      bottom: 0;
+      width: 100%;
+      background: #000;
+      border-top: 1px solid #fff;
+      padding: 2px 5px;
+      font-size: 9px;
+      display: none;
+    }
+  </style>
+</head>
+<body>
+  <div id="app">
+    <!-- Main Menu -->
+    <div id="menu">
+      <h1>🎮 R1 ARCADE</h1>
+      <div id="menu-items">
+        <div class="menu-item" data-game="pong">
+          <div class="menu-icon"></div>
+          <span class="menu-label">1. PONG</span>
+        </div>
+        <div class="menu-item" data-game="pinball">
+          <div class="menu-icon"></div>
+          <span class="menu-label">2. PINBALL</span>
+        </div>
+        <div class="menu-item" data-game="shooter">
+          <div class="menu-icon"></div>
+          <span class="menu-label">3. SHOOTER</span>
+        </div>
+        <div class="menu-item" data-game="maze">
+          <div class="menu-icon"></div>
+          <span class="menu-label">4. MARBLE MAZE</span>
+        </div>
+        <div class="menu-item" data-game="rps">
+          <div class="menu-icon"></div>
+          <span class="menu-label">5. ROCK PAPER SCISSORS</span>
+        </div>
+        <div class="menu-item" data-game="cannon">
+          <div class="menu-icon"></div>
+          <span class="menu-label">6. CANNON</span>
+        </div>
+        <div class="menu-item" data-game="stack">
+          <div class="menu-icon"></div>
+          <span class="menu-label">7. STACK TOWER</span>
+        </div>
+        <div class="menu-item" data-game="dice">
+          <div class="menu-icon"></div>
+          <span class="menu-label">8. DICE ROLLER</span>
+        </div>
+        <div class="menu-item" data-game="log">
+          <div class="menu-icon"></div>
+          <span class="menu-label">9. LOG ROLLER</span>
+        </div>
+        <div class="menu-item" data-game="tempest">
+          <div class="menu-icon"></div>
+          <span class="menu-label">10. TEMPEST</span>
+        </div>
+        <div class="menu-item" data-game="settings">
+          <div class="menu-icon"></div>
+          <span class="menu-label">⚙️ SETTINGS</span>
+        </div>
+      </div>
+      <div id="loading" style="display:none;">
+        <p class="blink">LOADING...</p>
+      </div>
+    </div>
+
+    <!-- Game Container -->
+    <div id="game-container">
+      <canvas id="game-canvas" width="234" height="270"></canvas>
+    </div>
+
+    <!-- Status Bar -->
+    <div id="status">
+      <span id="status-text">Ready</span>
+    </div>
+  </div>
+
+  <!-- R1 SDK Integration -->
+  <script>
+    // R1 Creation SDK Event Listeners
+    let selectedIndex = 0;
+    const menuItems = document.querySelectorAll('.menu-item');
+    
+    // Highlight first item by default
+    if (menuItems.length > 0) {
+      menuItems[0].classList.add('selected');
+    }
+
+    // Scroll Wheel Navigation (Portrait Mode)
+    window.addEventListener('scrollUp', () => {
+      if (document.getElementById('menu').style.display !== 'none') {
+        selectedIndex = Math.max(0, selectedIndex - 1);
+        updateMenuSelection();
+      }
+    });
+
+    window.addEventListener('scrollDown', () => {
+      if (document.getElementById('menu').style.display !== 'none') {
+        selectedIndex = Math.min(menuItems.length - 1, selectedIndex + 1);
+        updateMenuSelection();
+      }
+    });
+
+    // PTT Button - Select/Launch Game
+    window.addEventListener('sideClick', () => {
+      if (document.getElementById('menu').style.display !== 'none') {
+        launchGame(menuItems[selectedIndex].dataset.game);
+      }
+    });
+
+    function updateMenuSelection() {
+      menuItems.forEach((item, index) => {
+        item.classList.toggle('selected', index === selectedIndex);
+      });
+      // Scroll selected item into view
+      menuItems[selectedIndex].scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+    }
+
+    function launchGame(gameName) {
+      document.getElementById('loading').style.display = 'block';
+      
+      // Simulate game loading
+      setTimeout(() => {
+        document.getElementById('loading').style.display = 'none';
+        document.getElementById('menu').style.display = 'none';
+        document.getElementById('game-container').style.display = 'block';
+        document.getElementById('status').style.display = 'block';
+        document.getElementById('status-text').textContent = `Playing: ${gameName.toUpperCase()}`;
+        
+        // Load game module (placeholder for now)
+        loadGameModule(gameName);
+      }, 500);
+    }
+
+    function loadGameModule(gameName) {
+      const canvas = document.getElementById('game-canvas');
+      const ctx = canvas.getContext('2d');
+      
+      // Clear canvas
+      ctx.fillStyle = '#000';
+      ctx.fillRect(0, 0, canvas.width, canvas.height);
+      
+      // Draw placeholder
+      ctx.fillStyle = '#fff';
+      ctx.font = '12px Courier New';
+      ctx.textAlign = 'center';
+      ctx.fillText(`${gameName.toUpperCase()}`, canvas.width / 2, canvas.height / 2 - 20);
+      ctx.font = '10px Courier New';
+      ctx.fillText('COMING SOON', canvas.width / 2, canvas.height / 2);
+      ctx.fillText('Hold PTT 5sec to exit', canvas.width / 2, canvas.height / 2 + 20);
+    }
+
+    // Long Press to Exit Game
+    let longPressTimer = null;
+    window.addEventListener('longPressStart', () => {
+      longPressTimer = setTimeout(() => {
+        // Return to menu
+        document.getElementById('menu').style.display = 'flex';
+        document.getElementById('game-container').style.display = 'none';
+        document.getElementById('status').style.display = 'none';
+      }, 5000);
+    });
+
+    window.addEventListener('longPressEnd', () => {
+      if (longPressTimer) {
+        clearTimeout(longPressTimer);
+        longPressTimer = null;
+      }
+    });
+
+    // Mouse/Touch fallback for testing
+    menuItems.forEach((item, index) => {
+      item.addEventListener('click', () => {
+        selectedIndex = index;
+        updateMenuSelection();
+        launchGame(item.dataset.game);
+      });
+    });
+
+    console.log('R1 Arcade Cabinet initialized');
+    console.log('SDK Events: scrollUp, scrollDown, sideClick, longPressStart, longPressEnd');
+  </script>
+</body>
+</html>
